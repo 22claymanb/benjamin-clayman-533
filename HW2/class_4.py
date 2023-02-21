@@ -7,7 +7,7 @@ import refinitiv.data as rd
 
 #####################################################
 
-ek.set_app_key(os.getenv('EIKON_API'))
+ek.set_app_key(os.getenv('EIKON_API_KEY'))
 
 start_date_str = '2023-01-30'
 end_date_str = '2023-02-08'
@@ -78,7 +78,6 @@ cancelled_entry_orders['date'] = pd.DataFrame(
     {'cancel_date': submitted_entry_orders['date'].iloc[(n1-1):].to_numpy()},
     index=submitted_entry_orders['date'].iloc[:(1-n1)].to_numpy()
 ).loc[cancelled_entry_orders['date']]['cancel_date'].to_list()
-print(cancelled_entry_orders)
 
 filled_entry_orders = submitted_entry_orders[
     submitted_entry_orders['trade_id'].isin(
