@@ -70,7 +70,7 @@ submitted_entry_orders = pd.DataFrame({
 with np.errstate(invalid='ignore'):
     cancelled_entry_orders = submitted_entry_orders[
         np.greater(
-            ivv_prc['Low Price'].iloc[1:][::-1].rolling(3).min()[::-1].to_numpy(),
+            ivv_prc['Low Price'].iloc[1:][::-1].rolling(n1).min()[::-1].to_numpy(),
             submitted_entry_orders['price'].to_numpy()
         )
     ].copy()
@@ -144,6 +144,17 @@ submitted_exit_orders = pd.DataFrame({
     'status': 'SUBMITTED',
 })
 
+
+first_exit_index = np.flatnonzero(
+        ivv_prc['Date'] == submitted_exit_orders['date'].iloc[0]
+    )[0]
+
+ivv_for_exit = ivv_prc.copy()
+print(ivv_for_exit)
+ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2).max()[::-1]
+shifted_exit = submitted_exit_orders.copy()
+shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
+print(ivv_for_exit[ivv_for_exit['Date'].isin(list(shifted_exit['date']))])
 
 
 entry_orders = pd.concat(
