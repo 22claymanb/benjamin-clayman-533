@@ -47,6 +47,8 @@ rd.close_session()
 # Parameters:
 alpha1 = -0.01
 n1 = 3
+alpha2 = .01
+n2 = 2
 
 # submitted entry orders
 submitted_entry_orders = pd.DataFrame({
@@ -131,12 +133,26 @@ filled_entry_orders = filled_entry_orders[
     filled_entry_orders['status'] == 'FILLED'
     ]
 
+submitted_exit_orders = pd.DataFrame({
+    'trade_id': filled_entry_orders['trade_id'],
+    'date': filled_entry_orders['date'],
+    'asset': filled_entry_orders['asset'],
+    'trip': 'EXIT',
+    'action': 'SELL',
+    'type': 'LMT',
+    'price': round(filled_entry_orders['price'] * (1 + alpha2), 2),
+    'status': 'SUBMITTED',
+})
+
+
+
 entry_orders = pd.concat(
     [
         submitted_entry_orders,
         cancelled_entry_orders,
         filled_entry_orders,
-        live_entry_orders
+        live_entry_orders,
+        submitted_exit_orders
     ]
 ).sort_values(["date", 'trade_id'])
 
@@ -154,3 +170,6 @@ print(live_entry_orders)
 
 print("entry_orders:")
 print(entry_orders)
+
+print("submitted_exit_orders:")
+print(submitted_exit_orders)
