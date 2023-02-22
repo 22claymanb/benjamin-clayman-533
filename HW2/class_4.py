@@ -134,7 +134,7 @@ filled_entry_orders = filled_entry_orders[
     ]
 
 submitted_exit_orders = pd.DataFrame({
-    'trade_id': filled_entry_orders['trade_id'],
+    'trade_id': range(live_entry_orders['trade_id'].max() + 1, live_entry_orders['trade_id'].max() + len(filled_entry_orders) + 1),
     'date': filled_entry_orders['date'],
     'asset': filled_entry_orders['asset'],
     'trip': 'EXIT',
@@ -150,12 +150,22 @@ first_exit_index = np.flatnonzero(
     )[0]
 
 ivv_for_exit = ivv_prc.copy()
-print(ivv_for_exit)
 ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2).max()[::-1]
-shifted_exit = submitted_exit_orders.copy()
-shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
-print(ivv_for_exit[ivv_for_exit['Date'].isin(list(shifted_exit['date']))])
 
+print(ivv_prc[ivv_prc['Date'].isin(list(submitted_exit_orders['date']))]['Close Price'])
+print(submitted_exit_orders['price'])
+
+shifted_exit = submitted_exit_orders[np.greater(submitted_exit_orders['price'].to_numpy(),
+                                                ivv_prc[ivv_prc['Date'].isin(list(submitted_exit_orders['date']))]['Close Price'].to_numpy())].copy()
+
+shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
+
+filtered_ivv_for_exit = ivv_for_exit[ivv_for_exit['Date'].isin(list(shifted_exit['date']))].copy()
+cut_exit = shifted_exit[shifted_exit['date'] <= ivv_prc.iloc[-1]['Date']].copy()
+
+cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_ivv_for_exit['High Price'].to_numpy())].copy()
+cancelled_exit_orders['status'] = 'CANCELLED'
+cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.BusinessDay(n=(n2 - 1))).dt.date
 
 entry_orders = pd.concat(
     [
@@ -163,7 +173,8 @@ entry_orders = pd.concat(
         cancelled_entry_orders,
         filled_entry_orders,
         live_entry_orders,
-        submitted_exit_orders
+        submitted_exit_orders,
+        cancelled_exit_orders,
     ]
 ).sort_values(["date", 'trade_id'])
 
@@ -184,3 +195,8 @@ print(entry_orders)
 
 print("submitted_exit_orders:")
 print(submitted_exit_orders)
+
+print("cancelled_exit_orders:")
+print(cancelled_exit_orders)
+
+print(ivv_prc)
