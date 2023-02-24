@@ -214,13 +214,32 @@ entry_orders = pd.concat(
         cancelled_entry_orders,
         filled_entry_orders,
         live_entry_orders,
+    ]
+).sort_values(["date", 'trade_id'])
+
+exit_orders = pd.concat(
+    [
         submitted_exit_orders,
         cancelled_exit_orders,
         market_sell_orders,
         filled_exit_orders,
         live_exit_orders,
     ]
-).sort_values(["date", 'trade_id'])
+).sort_values(['date', 'trade_id'])
+
+blotter = pd.concat(
+    [
+        submitted_entry_orders,
+        cancelled_entry_orders,
+        filled_entry_orders,
+        live_entry_orders,
+        submitted_exit_orders,
+        cancelled_exit_orders,
+        market_sell_orders,
+        filled_exit_orders,
+        live_exit_orders,
+    ]
+).sort_values(['date', 'trade_id'])
 
 print("submitted_entry_orders:")
 print(submitted_entry_orders)
@@ -251,5 +270,11 @@ print(filled_exit_orders)
 
 print("live_exit_orders:")
 print(live_exit_orders)
+
+print("exit_orders:")
+print(exit_orders)
+
+print("blotter:")
+print(blotter)
 
 print(ivv_prc)
