@@ -134,7 +134,7 @@ filled_entry_orders = filled_entry_orders[
     ]
 
 submitted_exit_orders = pd.DataFrame({
-    'trade_id': range(live_entry_orders['trade_id'].max() + 1, live_entry_orders['trade_id'].max() + len(filled_entry_orders) + 1),
+    'trade_id': filled_entry_orders['trade_id'],
     'date': filled_entry_orders['date'],
     'asset': filled_entry_orders['asset'],
     'trip': 'EXIT',
@@ -145,7 +145,7 @@ submitted_exit_orders = pd.DataFrame({
 })
 
 ivv_for_exit = ivv_prc.copy()
-ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2).max()[::-1]
+ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2-1).max()[::-1]
 
 shifted_exit = submitted_exit_orders[np.greater(submitted_exit_orders['price'].to_numpy(),
                                                 ivv_prc[ivv_prc['Date'].isin(list(submitted_exit_orders['date']))]['Close Price'].to_numpy())].copy()
@@ -157,10 +157,10 @@ cut_exit = shifted_exit[shifted_exit['date'] <= ivv_prc.iloc[-1]['Date']].copy()
 
 cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_ivv_for_exit['High Price'].to_numpy())].copy()
 cancelled_exit_orders['status'] = 'CANCELLED'
-cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.BusinessDay(n=(n2-1))).dt.date
+cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.BusinessDay(n=(n2-2))).dt.date
 
 market_sell_orders = pd.DataFrame({
-    'trade_id': range(submitted_exit_orders['trade_id'].max() + 1, submitted_exit_orders['trade_id'].max() + len(cancelled_exit_orders) + 1),
+    'trade_id': cancelled_exit_orders['trade_id'],
     'date': cancelled_exit_orders['date'],
     'asset': cancelled_exit_orders['asset'],
     'trip': 'EXIT',
@@ -169,6 +169,44 @@ market_sell_orders = pd.DataFrame({
     'price': ivv_prc[ivv_prc['Date'].isin(list(cancelled_exit_orders['date']))]['Close Price'].to_numpy(),
     'status': 'SUBMITTED',
 })
+
+filled_exit_orders = submitted_exit_orders[
+    submitted_exit_orders['trade_id'].isin(
+        list(set(submitted_exit_orders['trade_id']) - set(cancelled_exit_orders['trade_id']))
+    )
+].copy()
+filled_exit_orders.reset_index(drop=True, inplace=True)
+
+filled_exit_orders['status'] = 'FILLED'
+for i in range(0, len(filled_exit_orders)):
+
+    idx1 = np.flatnonzero(
+        ivv_prc['Date'] == filled_exit_orders['date'].iloc[i]
+    )[0]
+
+    if ivv_prc['Close Price'].iloc[idx1] > filled_exit_orders['price'].iloc[i]:
+        filled_exit_orders.at[i, 'date'] = ivv_prc['Date'].iloc[idx1]
+        continue
+
+    ivv_slice = ivv_prc.iloc[idx1 + 1:(idx1+n2)]['High Price']
+
+    fill_inds = ivv_slice > filled_exit_orders['price'].iloc[i]
+
+    if (pd.to_datetime(filled_exit_orders['date'].iloc[i]) + pd.tseries.offsets.BusinessDay(n=(n2-1))).date() >= ivv_prc['Date'].iloc[-1]:
+        filled_exit_orders.at[i, 'status'] = 'LIVE'
+    else:
+        filled_exit_orders.at[i, 'date'] = ivv_prc['Date'].iloc[
+            fill_inds.idxmax()
+        ]
+
+if any(filled_exit_orders['status'] =='LIVE'):
+    live_exit_orders = filled_exit_orders[filled_exit_orders['status'] == 'LIVE'].copy()
+    live_exit_orders['date'] = pd.to_datetime(next_business_day).date()
+
+filled_exit_orders = filled_exit_orders[
+    filled_exit_orders['status'] == 'FILLED'
+    ]
+
 
 entry_orders = pd.concat(
     [
@@ -179,6 +217,8 @@ entry_orders = pd.concat(
         submitted_exit_orders,
         cancelled_exit_orders,
         market_sell_orders,
+        filled_exit_orders,
+        live_exit_orders,
     ]
 ).sort_values(["date", 'trade_id'])
 
@@ -205,5 +245,11 @@ print(cancelled_exit_orders)
 
 print("market_sell_orders:")
 print(market_sell_orders)
+
+print("filled_exit_orders:")
+print(filled_exit_orders)
+
+print("live_exit_orders:")
+print(live_exit_orders)
 
 print(ivv_prc)
