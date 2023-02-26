@@ -8,6 +8,7 @@ import numpy as np
 import os
 import refinitiv.dataplatform.eikon as ek
 import refinitiv.data as rd
+import simple_trade_logic
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -114,8 +115,17 @@ app.layout = dbc.Container(
     fluid=True
 )
 
+@app.callback(
+    Output("blotter", "data"),
+    Input("run-query", "n_clicks"),
+    [State("alpha1", "value"),State("n1","value"),State("alpha2","value"),State("n2","value"),
+     State("refinitiv-date-range", "start_date"), State("refinitiv-date-range", "end_date"),
+     State("asset","value")],
+    prevent_initial_call=True
+)
 
-
+def query_refinitiv (n_clicks, alpha1, n1, alpha2, n2, start_date, end_date, asset):
+    return simple_trade_logic.get_blotter(alpha1, n1, alpha2, n2, start_date, end_date, asset)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
