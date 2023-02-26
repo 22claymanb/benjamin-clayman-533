@@ -38,6 +38,8 @@ def get_blotter(
     prc['Date'] = pd.to_datetime(prc['Date']).dt.date
     prc.drop(columns='Instrument', inplace=True)
 
+    prc.dropna(inplace=True)
+
     ## Get the next business day from Refinitiv!!!!!!!
     rd.open_session()
 
@@ -54,7 +56,7 @@ def get_blotter(
     submitted_entry_orders = pd.DataFrame({
         "trade_id": range(1, prc.shape[0]),
         "date": list(pd.to_datetime(prc["Date"].iloc[1:]).dt.date),
-        "asset": "IVV",
+        "asset": asset,
         "trip": 'ENTER',
         "action": "BUY",
         "type": "LMT",
@@ -169,7 +171,7 @@ def get_blotter(
         'trip': 'EXIT',
         'action': 'SELL',
         'type': 'MKT',
-        'price': prc[prc['Date'].isin(list(cancelled_exit_orders['date']))]['Close Price'].to_numpy(),
+        'price':  prc.merge(cancelled_exit_orders, how="right", left_on="Date", right_on="date")['Close Price'].to_numpy(),
         'status': 'SUBMITTED',
     })
 
@@ -195,13 +197,16 @@ def get_blotter(
 
         fill_inds = ivv_slice > filled_exit_orders['price'].iloc[i]
 
-        if (pd.to_datetime(filled_exit_orders['date'].iloc[i]) + pd.tseries.offsets.BusinessDay(n=(n2-1))).date() >= prc['Date'].iloc[-1]:
+        if len(fill_inds) == 0:
+            filled_exit_orders.at[i, 'status'] = 'LIVE'
+        elif (len(fill_inds) < (n2 - 1)) & (not any(fill_inds)):
             filled_exit_orders.at[i, 'status'] = 'LIVE'
         else:
             filled_exit_orders.at[i, 'date'] = prc['Date'].iloc[
                 fill_inds.idxmax()
             ]
 
+    live_exit_orders = pd.DataFrame()
     if any(filled_exit_orders['status'] =='LIVE'):
         live_exit_orders = filled_exit_orders[filled_exit_orders['status'] == 'LIVE'].copy()
         live_exit_orders['date'] = pd.to_datetime(next_business_day).date()
@@ -222,7 +227,7 @@ def get_blotter(
             filled_exit_orders,
             live_exit_orders,
         ]
-    ).sort_values(['date', 'trade_id'])
+    ).sort_values(['trade_id', 'trip', 'date'])
 
     return blotter.to_dict('records')
 

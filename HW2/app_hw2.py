@@ -43,7 +43,7 @@ controls = dbc.Card(
                                     id='n1',
                                     type='number',
                                     value=3,
-                                    min=1,
+                                    min=2,
                                     step=1
                                 )
                             )
@@ -72,7 +72,7 @@ controls = dbc.Card(
                                     id='n2',
                                     type='number',
                                     value=5,
-                                    min=1,
+                                    min=2,
                                     step=1
                                 )
                             )

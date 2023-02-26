@@ -9,7 +9,7 @@ import refinitiv.data as rd
 
 ek.set_app_key(os.getenv('EIKON_API_KEY'))
 
-start_date_str = '2023-01-24'
+start_date_str = '2023-01-30'
 end_date_str = '2023-02-08'
 
 ivv_prc, ivv_prc_err = ek.get_data(
@@ -48,7 +48,7 @@ rd.close_session()
 alpha1 = -0.01
 n1 = 3
 alpha2 = .01
-n2 = 2
+n2 = 5
 
 # submitted entry orders
 submitted_entry_orders = pd.DataFrame({
@@ -101,7 +101,6 @@ for i in range(0, len(filled_entry_orders)):
     ivv_slice = ivv_prc.iloc[idx1:(idx1+n1)]['Low Price']
 
     fill_inds = ivv_slice <= filled_entry_orders['price'].iloc[i]
-
 
     if (len(fill_inds) < n1) & (not any(fill_inds)):
         filled_entry_orders.at[i, 'status'] = 'LIVE'
@@ -167,7 +166,7 @@ market_sell_orders = pd.DataFrame({
     'trip': 'EXIT',
     'action': 'SELL',
     'type': 'MKT',
-    'price': ivv_prc[ivv_prc['Date'].isin(list(cancelled_exit_orders['date']))]['Close Price'].to_numpy(),
+    'price': ivv_prc.merge(cancelled_exit_orders, how="right", left_on="Date", right_on="date")['Close Price'].to_numpy(),
     'status': 'SUBMITTED',
 })
 
@@ -193,7 +192,7 @@ for i in range(0, len(filled_exit_orders)):
 
     fill_inds = ivv_slice > filled_exit_orders['price'].iloc[i]
 
-    if (pd.to_datetime(filled_exit_orders['date'].iloc[i]) + pd.tseries.offsets.BusinessDay(n=(n2-1))).date() >= ivv_prc['Date'].iloc[-1]:
+    if (len(fill_inds) < (n2-1)) & (not any(fill_inds)):
         filled_exit_orders.at[i, 'status'] = 'LIVE'
     else:
         filled_exit_orders.at[i, 'date'] = ivv_prc['Date'].iloc[
@@ -240,7 +239,7 @@ blotter = pd.concat(
         filled_exit_orders,
         live_exit_orders,
     ]
-).sort_values(['date', 'trade_id'])
+).sort_values(['trade_id', 'trip', 'date'])
 
 print("submitted_entry_orders:")
 print(submitted_entry_orders)
