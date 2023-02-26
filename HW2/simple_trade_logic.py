@@ -102,7 +102,9 @@ def get_blotter(
 
         fill_inds = ivv_slice <= filled_entry_orders['price'].iloc[i]
 
-        if (len(fill_inds) < n1) & (not any(fill_inds)):
+        if len(fill_inds) == 0:
+            filled_entry_orders.at[i, 'status'] = 'LIVE'
+        elif (len(fill_inds) < n1) & (not any(fill_inds)):
             filled_entry_orders.at[i, 'status'] = 'LIVE'
         else:
             filled_entry_orders.at[i, 'date'] = prc['Date'].iloc[
@@ -148,12 +150,13 @@ def get_blotter(
     ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2-1).max()[::-1]
 
     shifted_exit = submitted_exit_orders[np.greater(submitted_exit_orders['price'].to_numpy(),
-                                                    prc[prc['Date'].isin(list(submitted_exit_orders['date']))]['Close Price'].to_numpy())].copy()
+                                                    prc.merge(submitted_exit_orders, how="right", left_on="Date",
+                                                                  right_on="date")['Close Price'].to_numpy())].copy()
 
     shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
 
-    filtered_ivv_for_exit = ivv_for_exit[ivv_for_exit['Date'].isin(list(shifted_exit['date']))].copy()
     cut_exit = shifted_exit[shifted_exit['date'] <= prc.iloc[-1]['Date']].copy()
+    filtered_ivv_for_exit = ivv_for_exit.merge(cut_exit, how="right", left_on="Date", right_on="date")
 
     cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_ivv_for_exit['High Price'].to_numpy())].copy()
     cancelled_exit_orders['status'] = 'CANCELLED'
@@ -221,7 +224,7 @@ def get_blotter(
         ]
     ).sort_values(['date', 'trade_id'])
 
-    return blotter
+    return blotter.to_dict('records')
 
 
     # entry_orders = pd.concat(

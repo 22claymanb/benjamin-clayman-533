@@ -9,7 +9,7 @@ import refinitiv.data as rd
 
 ek.set_app_key(os.getenv('EIKON_API_KEY'))
 
-start_date_str = '2023-01-30'
+start_date_str = '2023-01-24'
 end_date_str = '2023-02-08'
 
 ivv_prc, ivv_prc_err = ek.get_data(
@@ -102,6 +102,7 @@ for i in range(0, len(filled_entry_orders)):
 
     fill_inds = ivv_slice <= filled_entry_orders['price'].iloc[i]
 
+
     if (len(fill_inds) < n1) & (not any(fill_inds)):
         filled_entry_orders.at[i, 'status'] = 'LIVE'
     else:
@@ -148,12 +149,12 @@ ivv_for_exit = ivv_prc.copy()
 ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2-1).max()[::-1]
 
 shifted_exit = submitted_exit_orders[np.greater(submitted_exit_orders['price'].to_numpy(),
-                                                ivv_prc[ivv_prc['Date'].isin(list(submitted_exit_orders['date']))]['Close Price'].to_numpy())].copy()
+                                                ivv_prc.merge(submitted_exit_orders, how="right", left_on="Date", right_on="date")['Close Price'].to_numpy())].copy()
 
 shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
 
-filtered_ivv_for_exit = ivv_for_exit[ivv_for_exit['Date'].isin(list(shifted_exit['date']))].copy()
 cut_exit = shifted_exit[shifted_exit['date'] <= ivv_prc.iloc[-1]['Date']].copy()
+filtered_ivv_for_exit = ivv_for_exit.merge(cut_exit, how="right", left_on="Date", right_on="date")
 
 cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_ivv_for_exit['High Price'].to_numpy())].copy()
 cancelled_exit_orders['status'] = 'CANCELLED'

@@ -123,7 +123,6 @@ app.layout = dbc.Container(
      State("asset","value")],
     prevent_initial_call=True
 )
-
 def query_refinitiv (n_clicks, alpha1, n1, alpha2, n2, start_date, end_date, asset):
     return simple_trade_logic.get_blotter(alpha1, n1, alpha2, n2, start_date, end_date, asset)
 
