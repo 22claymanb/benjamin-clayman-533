@@ -7,17 +7,13 @@ import refinitiv.data as rd
 
 #####################################################
 
-def get_blotter(
-    alpha1: float = -0.01,
-    n1: int = 3,
-    alpha2: float = .01,
-    n2: int = 2,
+def query_refinitiv(
     start_date_str: str = '2023-01-30',
     end_date_str: str = '2023-02-08',
     asset: str = "IVV"
 ):
 
-    ek.set_app_key(os.getenv('EIKON_API_KEY'))
+    ek.set_app_key(os.getenv('EIKON_API'))
 
     prc, prc_err = ek.get_data(
         instruments = [asset],
@@ -36,9 +32,24 @@ def get_blotter(
     )
 
     prc['Date'] = pd.to_datetime(prc['Date']).dt.date
-    prc.drop(columns='Instrument', inplace=True)
+    # prc.drop(columns='Instrument', inplace=True)
 
     prc.dropna(inplace=True)
+
+    return prc
+
+
+
+def get_blotter(
+    prc,
+    alpha1: float = -0.01,
+    n1: int = 3,
+    alpha2: float = .01,
+    n2: int = 2,
+    start_date_str: str = '2023-01-30',
+    end_date_str: str = '2023-02-08',
+    asset: str = "IVV"
+):
 
     ## Get the next business day from Refinitiv!!!!!!!
     rd.open_session()
@@ -54,7 +65,7 @@ def get_blotter(
 
     # submitted entry orders
     submitted_entry_orders = pd.DataFrame({
-        "trade_id": range(1, prc.shape[0]),
+        "trade_id": range(1, prc.shape[0]*2-1,2), #all entry ids are odd number
         "date": list(pd.to_datetime(prc["Date"].iloc[1:]).dt.date),
         "asset": asset,
         "trip": 'ENTER',
@@ -100,9 +111,9 @@ def get_blotter(
             prc['Date'] == filled_entry_orders['date'].iloc[i]
         )[0]
 
-        ivv_slice = prc.iloc[idx1:(idx1+n1)]['Low Price']
+        prc_slice = prc.iloc[idx1:(idx1+n1)]['Low Price']
 
-        fill_inds = ivv_slice <= filled_entry_orders['price'].iloc[i]
+        fill_inds = prc_slice <= filled_entry_orders['price'].iloc[i]
 
         if len(fill_inds) == 0:
             filled_entry_orders.at[i, 'status'] = 'LIVE'
@@ -116,7 +127,7 @@ def get_blotter(
     live_entry_orders = pd.DataFrame({
         "trade_id": prc.shape[0],
         "date": pd.to_datetime(next_business_day).date(),
-        "asset": "IVV",
+        "asset": asset,
         "trip": 'ENTER',
         "action": "BUY",
         "type": "LMT",
@@ -138,7 +149,7 @@ def get_blotter(
         ]
 
     submitted_exit_orders = pd.DataFrame({
-        'trade_id': filled_entry_orders['trade_id'],
+        'trade_id': filled_entry_orders['trade_id']+1, #exit order are given the odd number after the even number
         'date': filled_entry_orders['date'],
         'asset': filled_entry_orders['asset'],
         'trip': 'EXIT',
@@ -148,8 +159,8 @@ def get_blotter(
         'status': 'SUBMITTED',
     })
 
-    ivv_for_exit = prc.copy()
-    ivv_for_exit['High Price'] = ivv_for_exit['High Price'][::-1].rolling(n2-1).max()[::-1]
+    prc_for_exit = prc.copy()
+    prc_for_exit['High Price'] = prc_for_exit['High Price'][::-1].rolling(n2-1).max()[::-1]
 
     shifted_exit = submitted_exit_orders[np.greater(submitted_exit_orders['price'].to_numpy(),
                                                     prc.merge(submitted_exit_orders, how="right", left_on="Date",
@@ -158,9 +169,9 @@ def get_blotter(
     shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
 
     cut_exit = shifted_exit[shifted_exit['date'] <= prc.iloc[-1]['Date']].copy()
-    filtered_ivv_for_exit = ivv_for_exit.merge(cut_exit, how="right", left_on="Date", right_on="date")
+    filtered_prc_for_exit = prc_for_exit.merge(cut_exit, how="right", left_on="Date", right_on="date")
 
-    cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_ivv_for_exit['High Price'].to_numpy())].copy()
+    cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_prc_for_exit['High Price'].to_numpy())].copy()
     cancelled_exit_orders['status'] = 'CANCELLED'
     cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.BusinessDay(n=(n2-2))).dt.date
 
@@ -193,9 +204,9 @@ def get_blotter(
             filled_exit_orders.at[i, 'date'] = prc['Date'].iloc[idx1]
             continue
 
-        ivv_slice = prc.iloc[idx1 + 1:(idx1+n2)]['High Price']
+        prc_slice = prc.iloc[idx1 + 1:(idx1+n2)]['High Price']
 
-        fill_inds = ivv_slice > filled_exit_orders['price'].iloc[i]
+        fill_inds = prc_slice > filled_exit_orders['price'].iloc[i]
 
         if len(fill_inds) == 0:
             filled_exit_orders.at[i, 'status'] = 'LIVE'
@@ -227,7 +238,7 @@ def get_blotter(
             filled_exit_orders,
             live_exit_orders,
         ]
-    ).sort_values(['trade_id', 'trip', 'date'])
+    ).sort_values(['date', 'trip', "trade_id"])
 
     return blotter.to_dict('records')
 
