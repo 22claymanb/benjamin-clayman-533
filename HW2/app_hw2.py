@@ -12,6 +12,7 @@ import refinitiv.data as rd
 import simple_trade_logic
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 
 percentage = dash_table.FormatTemplate.percentage(3)
 
@@ -109,7 +110,7 @@ app.layout = dbc.Container(
             [
                 dbc.Col(controls, md=4),
                 dbc.Col(
-                    html.Img(src='asset/reactive.jpg'),
+                    html.Img(src='asset/reactive.png'),
                     md = 8
                 )
             ],

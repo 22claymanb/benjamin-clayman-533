@@ -13,7 +13,7 @@ def query_refinitiv(
     asset: str = "IVV"
 ):
 
-    ek.set_app_key(os.getenv('EIKON_API'))
+    ek.set_app_key(os.getenv('EIKON_API_KEY'))
 
     prc, prc_err = ek.get_data(
         instruments = [asset],
@@ -238,7 +238,7 @@ def get_blotter(
             filled_exit_orders,
             live_exit_orders,
         ]
-    ).sort_values(['date', 'trip', "trade_id"])
+    ).sort_values(['trade_id', 'trip', "date"])
 
     return blotter.to_dict('records')
 
