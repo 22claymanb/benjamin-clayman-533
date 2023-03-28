@@ -4,35 +4,43 @@ import math
 
 def blotter_to_ledger(blotter):
     blotter_df = pd.read_csv(blotter)
-    blotter_df.set_index('trade_id', inplace=True)
     blotter_df['date'] = pd.to_datetime(blotter_df['date'])
     
     ledger_df = pd.DataFrame(columns=['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'n', 'rtn'])
-    trade_df = pd.DataFrame()
-    for i in len(set(blotter_df.index)):
-        trade_blotter = blotter_df.loc[i]
+    for i in set(blotter_df['trade_id']):
+        trade_blotter = blotter_df[blotter_df['trade_id'] == i]
         
-        trade_df['trade_id'] = i
-        trade_df['asset'] = trade_blotter.iloc[0]['asset']
-        trade_df['dt_enter'] = trade_blotter.iloc[0]['date']
-        trade_df['dt_exit'] = trade_blotter.iloc[-1]['date']
-        trade_df['n'] = (trade_df['dt_exit'].iloc[0] - trade_df['dt_enter'].iloc[0]).days
+        trade_id = i
+        asset = trade_blotter.iloc[0]['asset']
+        dt_enter = trade_blotter.iloc[0]['date']
+        dt_exit = trade_blotter.iloc[-1]['date']
         
-        if trade_blotter.iloc[-1]['trip'] == 'ENTER':
-            trade_df['success'] = 0
-            trade_df['rtn'] = 0.0
-        else:
-            rtn = math.log(trade_blotter.iloc[0]['price'] / trade_blotter.iloc[-1]['price']) / trade_df['n']
-            trade_df['rtn'] = rtn
+        n = (dt_exit - dt_enter).days + 1
+        success = 0
+        rtn = 0.0
+        
+        if trade_blotter.iloc[-1]['trip'] != 'ENTER':
+            rtn = math.log(trade_blotter.iloc[-1]['price'] / trade_blotter.iloc[0]['price']) / n
             
             if rtn > 0:
-                trade_df['success'] = 1
-            else:
-                trade_df['success'] = 0
+                success = 1
                 
-        ledger_df = pd.concat([ledger_df, trade_df], ignore_index=True)         
+                
+        trade_ledger_dict = {
+            'trade_id' : [trade_id],
+            'asset' : [asset],
+            'dt_enter' : [dt_enter],
+            'dt_exit' : [dt_exit],
+            'success' : [success],
+            'n' : [n],
+            'rtn' : [rtn],
+         }
+        trade_ledger_df = pd.DataFrame(data=trade_ledger_dict)
+                
+        ledger_df = pd.concat([ledger_df, trade_ledger_df], ignore_index=True)         
             
     return ledger_df
 
-blotter_df = blotter_to_ledger('blotter.csv').head(10)
+ledger_df = blotter_to_ledger('blotter.csv')
+print(ledger_df.head(25))
     
