@@ -50,8 +50,4 @@ def blotter_to_ledger(blotter):
         
         
     return ledger_df
-
-blotter_df = pd.read_csv('blotter.csv')
-ledger_df = blotter_to_ledger(blotter_df)
-print(ledger_df.head(25))
     
