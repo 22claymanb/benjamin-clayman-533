@@ -50,4 +50,3 @@ def blotter_to_ledger(blotter):
         
         
     return ledger_df
-    
