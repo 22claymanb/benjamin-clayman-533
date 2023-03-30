@@ -6,7 +6,7 @@ def blotter_to_ledger(blotter):
     blotter['date'] = pd.to_datetime(blotter['date'])
     
     ledger_df = pd.DataFrame(columns=['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'n', 'rtn'])
-    for i in set(blotter_df['trade_id']):
+    for i in set(blotter['trade_id']):
         trade_blotter = blotter[blotter['trade_id'] == i]
         
         trade_id = i
