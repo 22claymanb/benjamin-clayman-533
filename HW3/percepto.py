@@ -21,20 +21,39 @@ del features['30 Yr']
 
 hw4_data = pd.read_excel('hw4_data.xlsx')
 hw4_data['Date'] = pd.to_datetime(hw4_data['Date'])
-hw4_data = hw4_data[['Date', 'IVV AU Equity', 'JPYUSD Curncy']]
+hw4_data = hw4_data[['Date', 'IVV US Equity', 'IVV AU Equity', 'JPYUSD Curncy']]
 
 features = features.merge(hw4_data, on='Date')
 features.sort_values('Date', inplace=True)
 features.dropna(inplace=True)
 features = features[features['Date'].isin(list(ledger['dt_enter']))]
 features.reset_index(drop=True, inplace=True)
-features = features[['Date', 'IVV AU Equity', 'JPYUSD Curncy']]
+features = features[['Date', 'IVV US Equity', 'IVV AU Equity', 'JPYUSD Curncy']]
+
+features['IVV US Equity'] = features['IVV US Equity'].shift(1) / features['IVV US Equity']
+features['IVV US Equity'] = features['IVV US Equity'].apply(math.log)
+features['IVV US Equity'] = features['IVV US Equity'].shift(1)
+
+features['IVV AU Equity'] = features['IVV AU Equity'].shift(1) / features['IVV AU Equity']
+features['IVV AU Equity'] = features['IVV AU Equity'].apply(math.log)
+
+features['JPYUSD Curncy'] = features['JPYUSD Curncy'].shift(1) / features['JPYUSD Curncy']
+features['JPYUSD Curncy'] = features['JPYUSD Curncy'].apply(math.log)
+features['JPYUSD Curncy'] = features['JPYUSD Curncy'].shift(1)
+features.dropna(inplace=True, ignore_index=True)
+
+print(features.head())
+
+ledger = ledger[ledger['dt_enter'].isin(features['Date'])]
+ledger.reset_index(drop=True, inplace=True)
+
+print(ledger.head())
 
 # Make a training set and let's try it out on two upcoming trades.
 # Choose a subset of data:
-X = features.drop('Date', axis=1).head(10)
-x_test = features.drop('Date', axis=1).iloc[[10, 11]]
-y = np.asarray(ledger.success.head(10), dtype="|S6")
+X = features.drop('Date', axis=1).iloc[200:250]
+x_test = features.drop('Date', axis=1).iloc[[250, 251]]
+y = np.asarray(ledger.success.iloc[200:250], dtype="|S6")
 
 sc = StandardScaler()
 
@@ -51,4 +70,4 @@ print("Perceptron's predictions: ")
 print(y_pred)
 
 print("Actual Performance")
-print(ledger.iloc[[10, 11]])
+print(ledger.iloc[[250, 251]])

@@ -38,19 +38,16 @@ def blotter_to_ledger(blotter):
             rtn = np.nan
 
         trade_ledger_dict = {
-            'trade_id' : [trade_id],
-            'asset' : [asset],
-            'dt_enter' : [dt_enter],
-            'dt_exit' : [dt_exit],
-            'success' : [success],
-            'n' : [n],
-            'rtn' : [rtn],
+            'trade_id': [trade_id],
+            'asset': [asset],
+            'dt_enter': [dt_enter],
+            'dt_exit': [dt_exit],
+            'success': [success],
+            'n': [n],
+            'rtn': [rtn],
         }         
     
         trade_ledger_df = pd.DataFrame(data=trade_ledger_dict)
         ledger_df = pd.concat([ledger_df, trade_ledger_df], ignore_index=True)
 
     return ledger_df.replace(np.nan, '')
-
-
-print(blotter_to_ledger(pd.read_csv('blotter.csv')).head(25))
