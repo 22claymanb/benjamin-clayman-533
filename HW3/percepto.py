@@ -10,11 +10,30 @@ from hw3_traitors import *
 blotter = pd.read_csv('blotter.csv')
 ledger = blotter_to_ledger(blotter)
 
+
 # build your set of features here.
 # merge them by date to add to this dataframe.
 features = pd.read_csv('daily-treasury-rates.csv')
-features['Date'] = pd.to_datetime(features['Date'])
 del features['30 Yr']
+del features['4 Mo']
+features.replace(0, .01, inplace=True)
+features['Date'] = pd.to_datetime(features['Date'])
+features.sort_values('Date', inplace=True)
+
+
+def convert_to_returns(column):
+    features[column] = features[column] / 100
+    features[column] = features[column].shift(1) / features[column]
+    features[column] = features[column].apply(math.log)
+
+
+for column in features.columns:
+    if column == 'Date':
+        continue
+
+    convert_to_returns(column)
+
+features.dropna(inplace=True)
 
 #vix = pd.read_csv('^VIX.csv')[['Date', 'Open']]
 #vix['Date'] = pd.to_datetime(vix['Date'])
@@ -51,9 +70,9 @@ print(ledger.head())
 
 # Make a training set and let's try it out on two upcoming trades.
 # Choose a subset of data:
-X = features.drop('Date', axis=1).iloc[200:250]
-x_test = features.drop('Date', axis=1).iloc[[250, 251]]
-y = np.asarray(ledger.success.iloc[200:250], dtype="|S6")
+X = features.drop('Date', axis=1).iloc[:50]
+x_test = features.drop('Date', axis=1).iloc[[50, 51]]
+y = np.asarray(ledger.success.iloc[:50], dtype="|S6")
 
 sc = StandardScaler()
 
@@ -70,4 +89,4 @@ print("Perceptron's predictions: ")
 print(y_pred)
 
 print("Actual Performance")
-print(ledger.iloc[[250, 251]])
+print(ledger.iloc[[50, 51]])
