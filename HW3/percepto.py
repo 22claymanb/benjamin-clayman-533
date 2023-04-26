@@ -9,6 +9,7 @@ from hw3_traitors import *
 
 blotter = pd.read_csv('blotter.csv')
 ledger = blotter_to_ledger(blotter)
+ledger = ledger[ledger['success'] != '']
 
 
 # build your set of features here.
@@ -20,8 +21,12 @@ features.replace(0, .01, inplace=True)
 features['Date'] = pd.to_datetime(features['Date'])
 features.sort_values('Date', inplace=True)
 
+implied_vol_features = pd.read_csv('implied-vol.csv')
+implied_vol_features.rename(columns={'IVOL_IMPLIED_FORWARD': 'Forward Price', 'IVOL_DELTA': 'Forward Vol'}, inplace=True)
+implied_vol_features['Dates'] = pd.to_datetime(implied_vol_features['Dates'])
+print(implied_vol_features)
 
-def convert_to_returns(column):
+"""def convert_to_returns(column):
     features[column] = features[column] / 100
     features[column] = features[column].shift(1) / features[column]
     features[column] = features[column].apply(math.log)
@@ -66,27 +71,44 @@ print(features.head())
 ledger = ledger[ledger['dt_enter'].isin(features['Date'])]
 ledger.reset_index(drop=True, inplace=True)
 
-print(ledger.head())
-
 # Make a training set and let's try it out on two upcoming trades.
 # Choose a subset of data:
-X = features.drop('Date', axis=1).iloc[:50]
-x_test = features.drop('Date', axis=1).iloc[[50, 51]]
-y = np.asarray(ledger.success.iloc[:50], dtype="|S6")
+prediction_list = []
+for i in range(features.shape[0] - 50):
+    X = features.drop('Date', axis=1).iloc[i:i + 50]
+    x_test = features.drop('Date', axis=1).iloc[[i + 50]]
+    y = np.asarray(ledger.success.iloc[i:i + 50], dtype="|S6")
 
-sc = StandardScaler()
+    sc = StandardScaler()
 
-sc.fit(X)
-X_std = sc.transform(X)
-x_test_std = sc.transform(x_test)
+    sc.fit(X)
+    X_std = sc.transform(X)
+    x_test_std = sc.transform(x_test)
 
-ppn = Perceptron(eta0=0.1)
-ppn.fit(X_std, y)
+    ppn = Perceptron(eta0=0.1)
+    ppn.fit(X_std, y)
 
-y_pred = ppn.predict(x_test_std)
+    y_pred = ppn.predict(x_test_std)
+    prediction_list.append(int(y_pred[0]))
 
-print("Perceptron's predictions: ")
-print(y_pred)
+ledger = ledger.iloc[50:]
+ledger.reset_index(drop=True, inplace=True)
 
-print("Actual Performance")
-print(ledger.iloc[[50, 51]])
+print("List of predictions")
+print(prediction_list)
+
+prediction_series = pd.Series(prediction_list)
+prediction_ledger = ledger.copy()
+prediction_ledger['success'] = prediction_series
+
+print("Ledger with predictions")
+print(prediction_ledger)
+
+print("Perceptron Return")
+print(prediction_ledger[prediction_ledger['success'] == 1]['rtn'].sum())
+
+print("Return without Perceptron")
+print(ledger['rtn'].sum())
+
+print(list(prediction_ledger['success']))
+print(list(ledger['success']))"""
