@@ -149,7 +149,7 @@ def get_blotter(
         ]
 
     submitted_exit_orders = pd.DataFrame({
-        'trade_id': filled_entry_orders['trade_id']+1, #exit order are given the odd number after the even number
+        'trade_id': filled_entry_orders['trade_id'], #exit order are given the odd number after the even number
         'date': filled_entry_orders['date'],
         'asset': filled_entry_orders['asset'],
         'trip': 'EXIT',
