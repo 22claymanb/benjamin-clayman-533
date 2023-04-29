@@ -96,6 +96,26 @@ controls = dbc.Card(
                     ])
                 ],
                 bordered=True
+            ),
+            dbc.Table(
+                [
+                    html.Thead(html.Tr([html.Th("n3 (Lookback Window)")])),
+                    html.Tbody([
+                        html.Tr([
+                            html.Td(
+                                dbc.Input(
+                                    id='n3',
+                                    type='number',
+                                    value=50,
+                                    max=100,
+                                    min=25,
+                                    step=1
+                                )
+                            )
+                        ])
+                    ])
+                ],
+                bordered=True
             )
         ]),
         dbc.Row(html.Button('Update Parameter', id='update-param', n_clicks=0)),
@@ -152,6 +172,7 @@ def query_refinitiv (run_query, update_param, alpha1, n1, alpha2, n2, start_date
         global query_enddate
         query_result = simple_trade_logic.query_refinitiv(start_date, end_date, asset)
         query_asset = asset
+
         query_startdate = start_date
         query_enddate = end_date
 
@@ -172,14 +193,16 @@ def query_refinitiv (run_query, update_param, alpha1, n1, alpha2, n2, start_date
 # def get_blotter (n_clicks, alpha1, n1, alpha2, n2, start_date, end_date, asset):
 #     return simple_trade_logic.get_blotter(query_result, alpha1, n1, alpha2, n2, start_date, end_date, asset)
 
+
 @app.callback(
     Output("ledger", "data"),
     Input("blotter", "data"),
-    prevent_initial_call = True
+    State("n3", "value"),
+    prevent_initial_call=True
 )
-def create_ledger(blotter):
+def create_ledger(blotter, n3):
     blotter_df = pd.DataFrame(blotter)
-    return percepto_ledger(blotter_df).to_dict('records')
+    return percepto_ledger(blotter_df, n3).to_dict('records')
 
 
 

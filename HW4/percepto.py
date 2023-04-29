@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from hw3_traitors import *
 
 
-def percepto_ledger(blotter):
+def percepto_ledger(blotter, n3):
     ledger = blotter_to_ledger(blotter)
     ledger = ledger[ledger['success'] != '']
 
@@ -71,7 +71,7 @@ def percepto_ledger(blotter):
 
     # Make a training set and let's try it out on two upcoming trades.
     # Choose a subset of data:
-    lookback_window = 50
+    lookback_window = n3
     prediction_list = []
     weight_array = np.array([[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 4.0, 2.5, 3.0, 4.0]])
     #classes_array = np.array([b'1', b'0'])
@@ -93,13 +93,13 @@ def percepto_ledger(blotter):
         y_pred = ppn.predict(x_test_std)
         prediction_list.append(int(y_pred[0]))
 
-    ledger = ledger.iloc[50:]
+    ledger = ledger.iloc[n3:]
     ledger.reset_index(drop=True, inplace=True)
 
     prediction_series = pd.Series(prediction_list)
     ledger['perceptron success'] = prediction_series
 
-    ledger['IVV return'] = ivv_series.iloc[50:].reset_index(drop=True)
+    ledger['IVV return'] = ivv_series.iloc[n3:].reset_index(drop=True)
     ledger = ledger[['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'perceptron success',
                      'n', 'rtn', 'IVV return']]
 
