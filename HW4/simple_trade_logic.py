@@ -65,7 +65,7 @@ def get_blotter(
 
     # submitted entry orders
     submitted_entry_orders = pd.DataFrame({
-        "trade_id": range(1, prc.shape[0]*2-1,2), #all entry ids are odd number
+        "trade_id": range(1, prc.shape[0]), #all entry ids are odd number
         "date": list(pd.to_datetime(prc["Date"].iloc[1:]).dt.date),
         "asset": asset,
         "trip": 'ENTER',

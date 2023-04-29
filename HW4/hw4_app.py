@@ -10,6 +10,7 @@ import os
 import refinitiv.dataplatform.eikon as ek
 import refinitiv.data as rd
 import simple_trade_logic
+from percepto import *
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -119,6 +120,9 @@ app.layout = dbc.Container(
         html.H2('Trade Blotter:'),
         dash_table.DataTable(id = "blotter"),
         html.H5('\n'),
+        html.H2('Ledger With Perceptron Predictions'),
+        dash_table.DataTable(id="ledger"),
+        html.H5('\n'),
         html.H5('Author:'),
         html.Div('Benjamin Clayman and Jiqing Fan')
     ],
@@ -167,6 +171,15 @@ def query_refinitiv (run_query, update_param, alpha1, n1, alpha2, n2, start_date
 # )
 # def get_blotter (n_clicks, alpha1, n1, alpha2, n2, start_date, end_date, asset):
 #     return simple_trade_logic.get_blotter(query_result, alpha1, n1, alpha2, n2, start_date, end_date, asset)
+
+@app.callback(
+    Output("ledger", "data"),
+    Input("blotter", "data"),
+    prevent_initial_call = True
+)
+def create_ledger(blotter):
+    blotter_df = pd.DataFrame(blotter)
+    return percepto_ledger(blotter_df).to_dict('records')
 
 
 
