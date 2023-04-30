@@ -136,10 +136,22 @@ app.layout = dbc.Container(
             align="center",
         ),
         html.H2('Trade Blotter:'),
-        dash_table.DataTable(id="blotter", fixed_rows={'headers': True}, style_table={'height': 500}),
+        dash_table.DataTable(id="blotter", fixed_rows={'headers': True}, style_table={'height': 500, 'overflowY': 'auto'},
+                            style_cell = {
+                                # all three widths are needed
+                                'minWidth': '180px', 'width': '180px', 'maxWidth': '180px',
+                                'overflow': 'hidden',
+                                'textOverflow': 'ellipsis',
+                            }),
         html.H5('\n'),
         html.H2('Ledger With Perceptron Predictions'),
-        dash_table.DataTable(id="ledger", fixed_rows={'headers': True}, style_table={'height': 500}),
+        dash_table.DataTable(id="ledger", fixed_rows={'headers': True}, style_table={'height': 500, 'overflowY': 'auto'},
+                             style_cell={
+                                 # all three widths are needed
+                                 'minWidth': '160px', 'width': '160px', 'maxWidth': '160px',
+                                 'overflow': 'hidden',
+                                 'textOverflow': 'ellipsis',
+                             }),
         html.H5('\n'),
         html.H5('Author:'),
         html.Div('Benjamin Clayman and Jiqing Fan')

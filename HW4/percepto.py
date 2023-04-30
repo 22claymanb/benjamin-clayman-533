@@ -105,6 +105,7 @@ def percepto_ledger(blotter, n3):
 
     ledger['dt_exit'] = pd.to_datetime(ledger['dt_exit'])
     ledger['dt_exit'] = ledger['dt_exit'].dt.strftime("%Y-%m-%d")
+    ledger.columns = ['Trade ID', 'Asset', 'Enter Date', 'Exit Date', 'Success', 'Perceptron Prediction', 'Number of Days', 'Return', 'IVV Return']
 
     return ledger
 

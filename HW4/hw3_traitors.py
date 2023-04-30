@@ -4,34 +4,34 @@ import math
 
 
 def blotter_to_ledger(blotter):
-    blotter['date'] = pd.to_datetime(blotter['date'])
+    blotter['Date'] = pd.to_datetime(blotter['Date'])
     
     ledger_df = pd.DataFrame(columns=['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'n', 'rtn'])
-    for i in set(blotter['trade_id']):
-        trade_blotter = blotter[blotter['trade_id'] == i]
+    for i in set(blotter['Trade ID']):
+        trade_blotter = blotter[blotter['Trade ID'] == i]
         
         trade_id = i
-        asset = trade_blotter.iloc[0]['asset']
-        dt_enter = trade_blotter.iloc[0]['date']
+        asset = trade_blotter.iloc[0]['Asset']
+        dt_enter = trade_blotter.iloc[0]['Date']
         
-        dt_exit = trade_blotter.iloc[-1]['date']
+        dt_exit = trade_blotter.iloc[-1]['Date']
         
         n = len(pd.bdate_range(dt_enter, dt_exit))
         
         success = 0
         rtn = 0.0
         
-        if trade_blotter.iloc[-1]['trip'] != 'ENTER':
-            rtn = math.log(trade_blotter.iloc[-1]['price'] / trade_blotter.iloc[0]['price']) / n
+        if trade_blotter.iloc[-1]['Trip'] != 'ENTER':
+            rtn = math.log(trade_blotter.iloc[-1]['Price'] / trade_blotter.iloc[0]['Price']) / n
             
             success = 1
             
-            if trade_blotter.iloc[-1]['type'] == 'MKT':
+            if trade_blotter.iloc[-1]['Type'] == 'MKT':
                 success = -1
         else:
             dt_exit = np.nan
                 
-        if trade_blotter.iloc[-1]['status'] == 'LIVE':
+        if trade_blotter.iloc[-1]['Status'] == 'LIVE':
             dt_exit = np.nan
             success = np.nan
             n = np.nan

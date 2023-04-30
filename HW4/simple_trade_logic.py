@@ -239,6 +239,7 @@ def get_blotter(
             live_exit_orders,
         ]
     ).sort_values(['trade_id', 'trip', "date"])
+    blotter.columns = ['Trade ID', 'Date', 'Asset', 'Trip', 'Action', 'Type', 'Price', 'Status']
 
     return blotter.to_dict('records')
 
