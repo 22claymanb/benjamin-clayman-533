@@ -29,12 +29,10 @@ controls = dbc.Card(
         dbc.Row([
             dcc.DatePickerRange(
                 id='refinitiv-date-range',
-                min_date_allowed=date(2015, 1, 1),
-                max_date_allowed=datetime.now(),
-                start_date=datetime.date(
-                    datetime.now() - timedelta(days=3 * 365)
-                ),
-                end_date=datetime.now().date()
+                min_date_allowed=date(2020, 1, 6),
+                max_date_allowed=date(2023, 3, 20),
+                start_date=date(2020, 1, 6),
+                end_date=date(2023, 3, 20)
             )
         ]),
         dbc.Row(html.Button('QUERY Refinitiv', id='run-query', n_clicks=0)),
@@ -138,10 +136,10 @@ app.layout = dbc.Container(
             align="center",
         ),
         html.H2('Trade Blotter:'),
-        dash_table.DataTable(id = "blotter"),
+        dash_table.DataTable(id="blotter", fixed_rows={'headers': True}, style_table={'height': 500}),
         html.H5('\n'),
         html.H2('Ledger With Perceptron Predictions'),
-        dash_table.DataTable(id="ledger"),
+        dash_table.DataTable(id="ledger", fixed_rows={'headers': True}, style_table={'height': 500}),
         html.H5('\n'),
         html.H5('Author:'),
         html.Div('Benjamin Clayman and Jiqing Fan')

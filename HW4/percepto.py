@@ -38,7 +38,6 @@ def percepto_ledger(blotter, n3):
     features.sort_values('Date', inplace=True)
     features.dropna(inplace=True)
     features.reset_index(drop=True, inplace=True)
-    features = features[features['Date'].isin(list(ledger['dt_enter']))]
 
     features['Forward Price'] /= features['IVV US Equity'].shift(1)
     features['Forward Price'] = features['Forward Price'].apply(math.log)
@@ -62,12 +61,10 @@ def percepto_ledger(blotter, n3):
     features.dropna(inplace=True)
     features.reset_index(drop=True, inplace=True)
 
+    features = features[features['Date'].isin(list(ledger['dt_enter']))]
     ledger = ledger[ledger['dt_enter'].isin(features['Date'])]
     ledger.reset_index(drop=True, inplace=True)
     ledger.replace(-1, 0, inplace=True)
-
-    print(ledger.head())
-    print(features.head())
 
     # Make a training set and let's try it out on two upcoming trades.
     # Choose a subset of data:
@@ -110,7 +107,6 @@ def percepto_ledger(blotter, n3):
     ledger['dt_exit'] = ledger['dt_exit'].dt.strftime("%Y-%m-%d")
 
     return ledger
-
 
 
 
