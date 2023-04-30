@@ -153,8 +153,12 @@ app.layout = dbc.Container(
                                  'textOverflow': 'ellipsis',
                              }),
         html.H5('\n'),
+        dcc.Graph(id="ledger-abplot"),
+        html.H5('\n'),
+        dcc.Graph(id="perceptron-abplot"),
+        html.H5('\n'),
         html.H5('Author:'),
-        html.Div('Benjamin Clayman and Jiqing Fan')
+        html.Div('Ryan Claypool, Benjamin Clayman, and Jiqing Fan')
     ],
     fluid=True
 )
@@ -214,6 +218,63 @@ def create_ledger(blotter, n3):
     blotter_df = pd.DataFrame(blotter)
     return percepto_ledger(blotter_df, n3).to_dict('records')
 
+@app.callback(
+    Output("ledger-abplot", "figure"),
+    Input("ledger", "data"),
+    prevent_initial_call=True
+)
+def ledger_plot(ledger):
+    ledger_df = pd.DataFrame(ledger)
+
+    scatter = px.scatter(ledger_df, x='IVV Return', y='Return', trendline='ols')
+
+    fit = px.get_trendline_results(scatter)
+    parameters = fit.iloc[0]["px_fit_results"].params
+
+    alpha = round(parameters[0], 5)
+    beta = round(parameters[1], 5)
+
+    scatter.update_layout(
+        title={
+            'text': "Normal Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(alpha, beta),
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+        }
+    )
+
+    return scatter
+
+@app.callback(
+    Output("perceptron-abplot", "figure"),
+    Input("ledger", "data"),
+    prevent_initial_call=True
+)
+def ledger_plot(ledger):
+    ledger_df = pd.DataFrame(ledger)
+
+    ledger_df = ledger_df[ledger_df['Perceptron Prediction'] == 1]
+
+    scatter = px.scatter(ledger_df, x='IVV Return', y='Return', trendline='ols')
+
+    fit = px.get_trendline_results(scatter)
+    parameters = fit.iloc[0]["px_fit_results"].params
+
+    alpha = round(parameters[0], 5)
+    beta = round(parameters[1], 5)
+
+    scatter.update_layout(
+        title={
+            'text': "Perceptron-assisted Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(alpha, beta),
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+        }
+    )
+
+    return scatter
 
 
 if __name__ == '__main__':

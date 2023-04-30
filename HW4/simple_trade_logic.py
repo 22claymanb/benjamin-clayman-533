@@ -4,8 +4,32 @@ import numpy as np
 import os
 import refinitiv.dataplatform.eikon as ek
 import refinitiv.data as rd
+from pandas.tseries.holiday import USFederalHolidayCalendar
 
 #####################################################
+
+"""
+Found this online. Somebody created a calendar for when the NYSE actually trades instead of using the USFederalHolidayCalendar
+which does not eliminate some holidays such as good friday
+"""
+from pandas.tseries.holiday import AbstractHolidayCalendar, Holiday, nearest_workday, \
+    USMartinLutherKingJr, USPresidentsDay, GoodFriday, USMemorialDay, \
+    USLaborDay, USThanksgivingDay
+
+
+class USTradingCalendar(AbstractHolidayCalendar):
+    rules = [
+        Holiday('NewYearsDay', month=1, day=1, observance=nearest_workday),
+        USMartinLutherKingJr,
+        USPresidentsDay,
+        GoodFriday,
+        USMemorialDay,
+        Holiday('USIndependenceDay', month=7, day=4, observance=nearest_workday),
+        Holiday('BushDay', year=2018, month=12, day=5),
+        USLaborDay,
+        USThanksgivingDay,
+        Holiday('Christmas', month=12, day=25, observance=nearest_workday)
+    ]
 
 def query_refinitiv(
     start_date_str: str = '2023-01-30',
@@ -166,14 +190,14 @@ def get_blotter(
                                                     prc.merge(submitted_exit_orders, how="right", left_on="Date",
                                                                   right_on="date")['Close Price'].to_numpy())].copy()
 
-    shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.BusinessDay(n=1)).dt.date
+    shifted_exit['date'] = (pd.to_datetime(shifted_exit["date"]) + pd.tseries.offsets.CustomBusinessDay(n=1, calendar=USTradingCalendar())).dt.date
 
     cut_exit = shifted_exit[shifted_exit['date'] <= prc.iloc[-1]['Date']].copy()
     filtered_prc_for_exit = prc_for_exit.merge(cut_exit, how="right", left_on="Date", right_on="date")
 
     cancelled_exit_orders = cut_exit[np.greater(cut_exit['price'].to_numpy(), filtered_prc_for_exit['High Price'].to_numpy())].copy()
     cancelled_exit_orders['status'] = 'CANCELLED'
-    cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.BusinessDay(n=(n2-2))).dt.date
+    cancelled_exit_orders['date'] = (pd.to_datetime(cancelled_exit_orders['date']) + pd.tseries.offsets.CustomBusinessDay(n=(n2-2), calendar=USTradingCalendar())).dt.date
 
     market_sell_orders = pd.DataFrame({
         'trade_id': cancelled_exit_orders['trade_id'],
