@@ -1,4 +1,4 @@
-trade_id,date,asset,trip,action,type,price,status
+Trade ID,Date,Asset,Trip,Action,Type,Price,Status
 1,1/3/20,IVV,ENTER,BUY,LMT,323.06,SUBMITTED
 1,1/3/20,IVV,ENTER,BUY,LMT,323.06,FILLED
 1,1/3/20,IVV,EXIT,SELL,LMT,326.2906,SUBMITTED

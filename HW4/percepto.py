@@ -11,6 +11,7 @@ from hw3_traitors import *
 from pandas.tseries.holiday import AbstractHolidayCalendar, Holiday, nearest_workday, \
     USMartinLutherKingJr, USPresidentsDay, GoodFriday, USMemorialDay, \
     USLaborDay, USThanksgivingDay
+from calc_ivv_returns import *
 
 #Taken from outside source because the builtin holiday calendar does not contain every holiday
 class USTradingCalendar(AbstractHolidayCalendar):
@@ -26,9 +27,6 @@ class USTradingCalendar(AbstractHolidayCalendar):
         USThanksgivingDay,
         Holiday('Christmas', month=12, day=25, observance=nearest_workday)
     ]
-
-from fetchy_refinitiv import *
-print(get_ivv_data())
 
 
 def percepto_ledger(blotter, n3):
@@ -46,13 +44,16 @@ def percepto_ledger(blotter, n3):
     implied_vol_features = pd.read_csv('implied-vol.csv')
     implied_vol_features.rename(columns={'IVOL_IMPLIED_FORWARD': 'Forward Price', 'IVOL_DELTA': 'Forward Vol', 'Dates':'Date'}, inplace=True)
     implied_vol_features['Date'] = pd.to_datetime(implied_vol_features['Date'])
+    #implied_vol_features = implied_vol_features.iloc[1:].reset_index(drop=True)
 
     #vix = pd.read_csv('^VIX.csv')[['Date', 'Open']]
     #vix['Date'] = pd.to_datetime(vix['Date'])
 
     hw4_data = pd.read_excel('hw4_data.xlsx')
     hw4_data['Date'] = pd.to_datetime(hw4_data['Date'])
-    hw4_data = hw4_data[['Date', 'IVV US Equity', 'IVV AU Equity', 'JPYUSD Curncy']]
+    hw4_data = hw4_data[['Date', 'JPYUSD Curncy']]
+
+    ivv_features = get_ivv_us_and_au()
 
     """
     ivv_return_list = []
@@ -63,27 +64,24 @@ def percepto_ledger(blotter, n3):
         ivv_return_list.append(math.log(future_price/current_price) / ledger.iloc[i]['n'])
     ivv_return_series = pd.Series(ivv_return_list)"""
 
-
     features = features.merge(hw4_data, on='Date')
     features = features.merge(implied_vol_features, on='Date')
+    features = features.merge(ivv_features, on='Date')
     features.sort_values('Date', inplace=True)
     features.dropna(inplace=True)
     features.reset_index(drop=True, inplace=True)
 
-    features['Forward Price'] /= features['IVV US Equity'].shift(1)
-    features['Forward Price'] = features['Forward Price'].apply(math.log)
+    features['Forward Price'] /= features['close'].shift(1)
+    #features['Forward Price'] /= ivv_df['close'].shift(1)
+    features['Forward Price'] = features['Forward Price'].dropna().apply(math.log)
     #features['Forward Price'] = features['Forward Price'].shift(1)
 
     features.reset_index(drop=True, inplace=True)
+    del features['close']
     #features = features[['Date', 'IVV US Equity', 'IVV AU Equity', 'JPYUSD Curncy', 'Forward Price', 'Forward Vol']]
 
-    features['IVV US Equity'] = features['IVV US Equity'] / features['IVV US Equity'].shift(1)
-    features['IVV US Equity'] = features['IVV US Equity'].apply(math.log)
     ivv_df = features[['Date', 'IVV US Equity']].copy()
     features['IVV US Equity'] = features['IVV US Equity'].shift(1)
-
-    features['IVV AU Equity'] = features['IVV AU Equity'] / features['IVV AU Equity'].shift(1)
-    features['IVV AU Equity'] = features['IVV AU Equity'].apply(math.log)
 
     features['JPYUSD Curncy'] = features['JPYUSD Curncy'] / features['JPYUSD Curncy'].shift(1)
     features['JPYUSD Curncy'] = features['JPYUSD Curncy'].apply(math.log)
@@ -127,7 +125,7 @@ def percepto_ledger(blotter, n3):
     ledger['perceptron success'] = prediction_series
 
     ivv_df = ivv_df[ivv_df['Date'].isin(list(ledger['dt_enter']))]
-    ledger['IVV return'] = ivv_df['IVV US Equity'].iloc[n3:].reset_index(drop=True)
+    ledger['IVV return'] = ivv_df['IVV US Equity'].reset_index(drop=True)
     ledger = ledger[['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'perceptron success',
                      'n', 'rtn', 'IVV return']]
 
@@ -142,6 +140,9 @@ def percepto_ledger(blotter, n3):
     #ledger['IVV Return'] = ledger['Return'].astype('float')
 
     return ledger
+
+
+print(percepto_ledger(pd.read_csv('blotter.csv'), 50))
 
 
 
