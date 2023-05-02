@@ -11,11 +11,15 @@ import refinitiv.dataplatform.eikon as ek
 import refinitiv.data as rd
 import simple_trade_logic
 from percepto import *
+from hoeffding import *
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 percentage = dash_table.FormatTemplate.percentage(3)
+
+perceptron_alpha = 0.0
+normal_alpha = 0.0
 
 controls = dbc.Card(
     [
@@ -106,7 +110,7 @@ controls = dbc.Card(
                                     type='number',
                                     value=50,
                                     max=100,
-                                    min=25,
+                                    min=30,
                                     step=1
                                 )
                             )
@@ -156,6 +160,8 @@ app.layout = dbc.Container(
         dcc.Graph(id="ledger-abplot"),
         html.H5('\n'),
         dcc.Graph(id="perceptron-abplot"),
+        html.H5('\n'),
+        html.H2(html.Div(id="hoeffding-display", style={'text-align':'center'})),
         html.H5('\n'),
         html.H5('Author:'),
         html.Div('Ryan Claypool, Benjamin Clayman, and Jiqing Fan')
@@ -231,12 +237,13 @@ def ledger_plot(ledger):
     fit = px.get_trendline_results(scatter)
     parameters = fit.iloc[0]["px_fit_results"].params
 
-    alpha = round(parameters[0], 5)
+    global normal_alpha
+    normal_alpha = round(parameters[0], 5)
     beta = round(parameters[1], 5)
 
     scatter.update_layout(
         title={
-            'text': "Normal Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(alpha, beta),
+            'text': "Normal Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(normal_alpha, beta),
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -251,7 +258,7 @@ def ledger_plot(ledger):
     Input("ledger", "data"),
     prevent_initial_call=True
 )
-def ledger_plot(ledger):
+def perceptron_plot(ledger):
     ledger_df = pd.DataFrame(ledger)
 
     ledger_df = ledger_df[ledger_df['Perceptron Prediction'] == 1]
@@ -261,12 +268,13 @@ def ledger_plot(ledger):
     fit = px.get_trendline_results(scatter)
     parameters = fit.iloc[0]["px_fit_results"].params
 
-    alpha = round(parameters[0], 5)
+    global perceptron_alpha
+    perceptron_alpha = round(parameters[0], 5)
     beta = round(parameters[1], 5)
 
     scatter.update_layout(
         title={
-            'text': "Perceptron-assisted Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(alpha, beta),
+            'text': "Perceptron-assisted Strategy Return vs. IVV Return; Alpha: {}, Beta: {}".format(perceptron_alpha, beta),
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -275,6 +283,19 @@ def ledger_plot(ledger):
     )
 
     return scatter
+
+@app.callback(
+    Output('hoeffding-display', 'children'),
+    Input("perceptron-abplot", "figure"),
+    State('ledger', 'data'),
+    prevent_initial_call=True
+)
+def calculate_hoeffding(percept_plot, ledger):
+    t = perceptron_alpha - normal_alpha
+    n = pd.DataFrame(ledger).shape[0]
+    bound = apply_hoeffding(n, t)
+
+    return "According to the Hoeffding Inequality. The upper bound on the probability that the actual alpha of our Perceptron strategy is less than the alpha of our unassisted strategy is {}".format(bound)
 
 
 if __name__ == '__main__':

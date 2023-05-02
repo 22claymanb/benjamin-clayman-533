@@ -22,7 +22,7 @@ def blotter_to_ledger(blotter):
         rtn = 0.0
         
         if trade_blotter.iloc[-1]['Trip'] != 'ENTER':
-            rtn = math.log(trade_blotter.iloc[-1]['Price'] / trade_blotter.iloc[0]['Price']) / n
+            rtn = (math.log(trade_blotter.iloc[-1]['Price'] / trade_blotter.iloc[0]['Price']) / n)
             
             success = 1
             
