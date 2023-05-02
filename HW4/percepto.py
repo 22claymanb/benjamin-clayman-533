@@ -27,6 +27,9 @@ class USTradingCalendar(AbstractHolidayCalendar):
         Holiday('Christmas', month=12, day=25, observance=nearest_workday)
     ]
 
+from fetchy_refinitiv import *
+print(get_ivv_data())
+
 
 def percepto_ledger(blotter, n3):
     ledger = blotter_to_ledger(blotter)

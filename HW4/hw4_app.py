@@ -36,7 +36,7 @@ controls = dbc.Card(
                 min_date_allowed=date(2020, 1, 6),
                 max_date_allowed=date(2023, 3, 20),
                 start_date=date(2020, 1, 6),
-                end_date=date(2023, 3, 20)
+                end_date=date(2023, 4, 13)
             )
         ]),
         dbc.Row(html.Button('QUERY Refinitiv', id='run-query', n_clicks=0)),
