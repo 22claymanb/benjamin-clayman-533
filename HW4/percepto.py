@@ -54,15 +54,20 @@ def percepto_ledger(blotter, n3):
     hw4_data = hw4_data[['Date', 'JPYUSD Curncy']]
 
     ivv_features = get_ivv_us_and_au()
+    print(ivv_features)
+    print(ledger)
 
-    """
     ivv_return_list = []
     for i in range(ledger.shape[0]):
-        ret_date = pd.to_datetime(ledger.iloc[i]['dt_enter']) + pd.tseries.offsets.CustomBusinessDay(n=(ledger.iloc[i]['n']) + 1, calendar=USTradingCalendar())
-        current_price = hw4_data[hw4_data['Date'] == ledger.iloc[i]['dt_enter']]['IVV US Equity'].iloc[0]
-        future_price = hw4_data[hw4_data['Date'] == ret_date]['IVV US Equity'].iloc[0]
-        ivv_return_list.append(math.log(future_price/current_price) / ledger.iloc[i]['n'])
-    ivv_return_series = pd.Series(ivv_return_list)"""
+        ret_date = pd.to_datetime(ledger.iloc[i]['dt_enter']) + pd.tseries.offsets.CustomBusinessDay(n=(ledger.iloc[i]['n']) - 1, calendar=USTradingCalendar())
+        ivv_returns = list(ivv_features[(ivv_features['Date'] >= ledger.iloc[i]['dt_enter']) & (ivv_features['Date'] <= ret_date)]['IVV US Equity'])
+        mult_result = 1
+        for ret in ivv_returns:
+            mult_result *= (ret + 1.0)
+        geo_mean = mult_result ** (1/len(ivv_returns))
+        ivv_return_list.append(geo_mean - 1)
+
+    ivv_return_series = pd.Series(ivv_return_list).shift(2).dropna().reset_index(drop=True).iloc[n3:].reset_index(drop=True)
 
     features = features.merge(hw4_data, on='Date')
     features = features.merge(implied_vol_features, on='Date')
@@ -118,14 +123,16 @@ def percepto_ledger(blotter, n3):
         y_pred = ppn.predict(x_test_std)
         prediction_list.append(int(y_pred[0]))
 
+    print(ledger)
     ledger = ledger.iloc[n3:]
     ledger.reset_index(drop=True, inplace=True)
 
     prediction_series = pd.Series(prediction_list)
     ledger['perceptron success'] = prediction_series
 
-    ivv_df = ivv_df[ivv_df['Date'].isin(list(ledger['dt_enter']))]
-    ledger['IVV return'] = ivv_df['IVV US Equity'].reset_index(drop=True)
+    #ivv_df = ivv_df[ivv_df['Date'].isin(list(ledger['dt_enter']))]
+    #ledger['IVV return'] = ivv_df['IVV US Equity'].reset_index(drop=True)
+    ledger['IVV return'] = ivv_return_series
     ledger = ledger[['trade_id', 'asset', 'dt_enter', 'dt_exit', 'success', 'perceptron success',
                      'n', 'rtn', 'IVV return']]
 
