@@ -54,8 +54,6 @@ def percepto_ledger(blotter, n3):
     hw4_data = hw4_data[['Date', 'JPYUSD Curncy']]
 
     ivv_features = get_ivv_us_and_au()
-    print(ivv_features)
-    print(ledger)
 
     ivv_return_list = []
     for i in range(ledger.shape[0]):
@@ -123,7 +121,6 @@ def percepto_ledger(blotter, n3):
         y_pred = ppn.predict(x_test_std)
         prediction_list.append(int(y_pred[0]))
 
-    print(ledger)
     ledger = ledger.iloc[n3:]
     ledger.reset_index(drop=True, inplace=True)
 
@@ -146,10 +143,9 @@ def percepto_ledger(blotter, n3):
     #ledger['Return'] = ledger['Return'].astype('float')
     #ledger['IVV Return'] = ledger['Return'].astype('float')
 
+    ledger = ledger[ledger['Success'] != 0]
+
     return ledger
-
-
-print(percepto_ledger(pd.read_csv('blotter.csv'), 50))
 
 
 

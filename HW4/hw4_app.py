@@ -133,7 +133,7 @@ app.layout = dbc.Container(
             [
                 dbc.Col(controls, md=4),
                 dbc.Col(
-                    html.Img(src='assets/reactive.jpg'),
+                    html.Img(src='assets/Reactive.png'),
                     md = 8
                 )
             ],
